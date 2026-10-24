@@ -47,6 +47,7 @@ flowchart LR
 | 编译、测试、发布 | [开发指南](docs/engineering/DEVELOPMENT.md) |
 | 查看实测与未测范围 | [验证记录](docs/validation/v0.1.0.md) |
 | 产品需求及交付流程 | [PRD](docs/product/PRD.md) / [验收计划](docs/product/ACCEPTANCE.md) / [流程](docs/DELIVERY.md) |
+| 下一版需求（尚未实现） | [真实音色、自定义训练与配置向导](docs/product/PRD-v0.2.md) |
 
 ## 环境与限制
 
