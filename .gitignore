@@ -1,0 +1,13 @@
+.venv/
+.cache/
+__pycache__/
+*.pyc
+build/
+dist/
+*.spec
+*.wav
+*.bin
+*.vst3/
+*.dll
+.pytest_cache/
+

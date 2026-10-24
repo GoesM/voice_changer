@@ -1,0 +1,68 @@
+# Voice Changer · 离线 AI 变声器
+
+**在 Windows 11 上，把麦克风男声转换为女声，再交给会议、游戏等应用。**
+
+中文桌面界面 · 本地 AI 推理 · CPU 引擎路线 · 虚拟麦克风接入
+
+[下载 Windows 预览版](https://github.com/GoesM/voice_changer/releases/tag/v0.1.0) · [首次使用教程](docs/user/QUICKSTART.md) · [功能介绍](docs/user/FEATURES.md) · [常见问题](docs/user/TROUBLESHOOTING.md) · [反馈问题](https://github.com/GoesM/voice_changer/issues)
+
+> **v0.1.0 是技术预览版。** 首次需要安装 VB-CABLE，并通过应用从 Beatrice 官方下载插件和模型；之后音频处理可离线运行。当前未完成腾讯会议/瓦洛兰特实机通话、自然度盲测及长时间稳定性验收，不将目标兼容当作已通过。程序暂未代码签名。
+
+## 下载到第一次出声
+
+1. 在 [GitHub Releases](https://github.com/GoesM/voice_changer/releases) 下载 `VoiceChanger-0.1.0-win-x64.zip`，完整解压后运行 `VoiceChanger.exe`。**无需安装 Python。** `Source code.zip` 是源码，不是应用程序。
+2. 按 [下载与安装教程](docs/user/QUICKSTART.md#1-下载与安装) 安装官方 VB-CABLE，按驱动提示重启。
+3. 阅读模型条款并同意后，点击“下载并配置 AI”，约 58 MB。插件和模型不会被镜像到本仓库。
+4. 实体麦克风选你的耳机/USB 麦克风，变声输出选 **CABLE Input**，先关闭监听。
+5. 点击“开始 AI 变声”，把会议或游戏的麦克风选为 **CABLE Output**。扬声器保持正常耳机。
+
+详细步骤：[开箱配置教程 →](docs/user/QUICKSTART.md)。首次需要驱动及模型准备，当前不是一个 EXE 内置全部依赖的零配置方案。
+
+```mermaid
+flowchart LR
+    A[实体麦克风] --> B[本地 Beatrice AI]
+    B --> C[CABLE Input 播放端]
+    C --> D[CABLE Output 录音端]
+    D --> E[会议 / 游戏]
+    B --> F[可选耳机监听]
+```
+
+## 已实现的亮点
+
+- **真实本地 AI**：标准 VST3 宿主运行 Beatrice 2，非简单升调冒充 AI；两种官方女声音色入口，支持音调/共振峰调整。
+- **离线音频链路**：联网仅用于主动下载或打开教程，无云端推理、账号服务或音频上传。
+- **中文首次配置**：下载 SHA-256 校验、选择已有模型、设备枚举与系统声音设置入口。
+- **静音与故障处理**：无原声自动旁路；启动模型自检，有界队列丢弃过期音频，避免无限积压。
+- **配置与诊断**：保存设备和音色，显示电平、处理耗时、丢块及欠载，导出不含音频的诊断文件。
+- **GitHub 持续交付**：Issue 管理需求和缺陷，Actions 测试打包，版本标签触发预览版发布。
+
+## 教程导航
+
+| 我想… | 去哪里 |
+| --- | --- |
+| 下载、安装、第一次使用 | [QUICKSTART](docs/user/QUICKSTART.md) |
+| 配置腾讯会议 / 瓦洛兰特 | [应用接入](docs/user/QUICKSTART.md#4-接入会议和游戏) |
+| 了解功能及边界 | [FEATURES](docs/user/FEATURES.md) |
+| 排查无声、卡顿、下载失败 | [TROUBLESHOOTING](docs/user/TROUBLESHOOTING.md) |
+| 编译、测试、发布 | [开发指南](docs/engineering/DEVELOPMENT.md) |
+| 查看实测与未测范围 | [验证记录](docs/validation/v0.1.0.md) |
+| 产品需求及交付流程 | [PRD](docs/product/PRD.md) / [验收计划](docs/product/ACCEPTANCE.md) / [流程](docs/DELIVERY.md) |
+
+## 环境与限制
+
+Windows 11 x64，需满足 [Beatrice 官方](https://prj-beatrice.com/) 的 CPU 要求。无需 CUDA 或独显，但本项目尚未给出完整验证的最低配置。固定 48 kHz、单路麦克风；蓝牙、AMD/ARM64、游戏负载需另测。首版没有任意人物克隆、热换参数、设备自动恢复或自研驱动。
+
+软件只控制虚拟输出，无法阻止应用自行切回实体麦克风。音频变声离线，会议/游戏自身仍可联网发送处理后的语音。
+
+## 开发快速启动
+
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements-build.txt
+.\.venv\Scripts\python.exe launcher.py
+.\scripts\build.ps1
+```
+
+## 许可证与致谢
+
+项目采用 [GPL-3.0](LICENSE)，包含 GPL 许可的 [Spotify Pedalboard](https://github.com/spotify/pedalboard)。AI 由用户本机的 [Beatrice 官方插件](https://prj-beatrice.com/) 提供，虚拟设备使用 [VB-CABLE](https://vb-audio.com/Cable/)。插件、模型、音色及驱动适用各自条款，详见 [第三方说明](THIRD_PARTY_NOTICES.md)。
