@@ -29,6 +29,7 @@ class Job:
 
     def run(self, args, cwd, progress, log, env=None):
         self.check()
+        env = dict(os.environ if env is None else env, PYTHONUTF8="1", PYTHONIOENCODING="utf-8")
         flags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
         with open(log, "a", encoding="utf-8") as output:
             output.write("\n> " + " ".join(map(str, args)) + "\n")

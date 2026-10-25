@@ -14,6 +14,7 @@ from voice_changer.rvc import RvcProcessor
 
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser()
     parser.add_argument("--engine-root", type=Path, required=True)
     parser.add_argument("--project", type=Path, required=True)

@@ -1,11 +1,26 @@
 """Executed only by the managed Applio Python, not imported by the desktop app."""
-import json
 import os
 from pathlib import Path
 import shutil
 import socket
-import struct
 import sys
+
+
+def unicode_index_io():
+    """Use Python filesystem I/O instead of FAISS's narrow Windows fopen paths."""
+    import faiss
+    import numpy as np
+    original_read, original_write = faiss.read_index, faiss.write_index
+    def read(path, *args):
+        if not isinstance(path, (str, os.PathLike)):
+            return original_read(path, *args)
+        return faiss.deserialize_index(np.frombuffer(Path(path).read_bytes(), dtype=np.uint8).copy())
+    def write(index, path, *args):
+        if not isinstance(path, (str, os.PathLike)):
+            return original_write(index, path, *args)
+        Path(path).write_bytes(faiss.serialize_index(index).tobytes())
+    faiss.read_index = read
+    faiss.write_index = write
 
 
 def offline():
@@ -29,6 +44,9 @@ def training(project, epochs):
         result.check_returncode()
         return result
     core.run_quiet = checked
+    def build_index(model_name, algorithm):
+        checked([sys.executable, str(Path(__file__).resolve()), "index", str(Path(core.logs_path) / model_name), algorithm])
+    core.run_index_script = build_index
     name = project.name
     cpus = max(1, min(8, (os.cpu_count() or 2) // 2))
     print("阶段 1/4：切分、标准化素材", flush=True)
@@ -37,6 +55,14 @@ def training(project, epochs):
     core.run_extract_script(name, "rmvpe", cpus, 0, 40000, "contentvec")
     print("阶段 3/4：在本机训练音色", flush=True)
     core.run_train_script(name, 10, True, True, epochs, 40000, 2, "0", True, False)
+    export_voice(project)
+
+
+def export_voice(project):
+    import core
+    import torch
+    unicode_index_io()
+    name = project.name
     logs = Path(core.logs_path) / name
     candidates = sorted((p for p in logs.rglob("*.pth") if not p.name.startswith(("G_", "D_"))),
                         key=lambda p: p.stat().st_mtime, reverse=True)
@@ -83,6 +109,7 @@ def realtime(project, mode, pitch):
     channel = sys.stdout.buffer
     sys.stdout = sys.stderr  # keep upstream logging away from framed audio
     offline()
+    unicode_index_io()
     from rvc.realtime.core import VoiceChanger
     block, overlap, context, index = (4800, .02, .5, .3) if mode == "game" else (9600, .04, 2., .75)
     model = VoiceChanger(block, overlap, context, str(project / "model.pth"), str(project / "model.index"),
@@ -109,3 +136,10 @@ if __name__ == "__main__":
         training(Path(sys.argv[2]), int(sys.argv[3]))
     elif sys.argv[1] == "realtime":
         realtime(Path(sys.argv[2]), sys.argv[3], float(sys.argv[4]))
+    elif sys.argv[1] == "index":
+        import runpy
+        unicode_index_io()
+        sys.argv = ["rvc/train/process/extract_index.py", sys.argv[2], sys.argv[3]]
+        runpy.run_path(sys.argv[0], run_name="__main__")
+    elif sys.argv[1] == "export":
+        export_voice(Path(sys.argv[2]))

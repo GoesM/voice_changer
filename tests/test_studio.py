@@ -91,6 +91,12 @@ class StudioTests(unittest.TestCase):
             Job().run([sys.executable, "-c", "raise SystemExit(9)"], self.root,
                       lambda _: None, self.root / "job.log")
 
+    def test_child_unicode_progress_is_preserved(self):
+        messages = []
+        Job().run([sys.executable, "-c", "print('训练完成 🎵')"], self.root,
+                  messages.append, self.root / "unicode.log")
+        self.assertEqual(messages, ["训练完成 🎵"])
+
     def test_offline_inference_rejects_network_connections(self):
         with patch("socket.socket.connect"), patch("socket.socket.connect_ex"), \
              patch("socket.create_connection"), patch.dict(os.environ):
