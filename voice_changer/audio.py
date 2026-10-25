@@ -54,8 +54,11 @@ def validate_route(input_device, output_device, monitor_device=None):
 
 
 class AudioEngine:
-    def __init__(self, processor):
+    def __init__(self, processor, block=BLOCK):
         self.processor = processor
+        self.block = block
+        self.input_max_age = max(.10, 2 * block / SAMPLE_RATE)
+        self.output_max_age = max(.15, 3 * block / SAMPLE_RATE)
         self.inputs = queue.Queue(maxsize=3)
         self.outputs = queue.Queue(maxsize=3)
         self.monitor = queue.Queue(maxsize=3)
@@ -97,7 +100,7 @@ class AudioEngine:
             stamp, generation, converted = q.get_nowait()
             if generation != self.generation:
                 return
-            if time.monotonic() - stamp > 0.15:
+            if time.monotonic() - stamp > self.output_max_age:
                 self.drops += 1
                 return
             data[:] = converted[:, None]
@@ -111,7 +114,7 @@ class AudioEngine:
                     stamp, generation, data = self.inputs.get(timeout=0.1)
                 except queue.Empty:
                     continue
-                if time.monotonic() - stamp > 0.10:
+                if time.monotonic() - stamp > self.input_max_age:
                     self.drops += 1
                     continue
                 start = time.perf_counter()
@@ -134,12 +137,12 @@ class AudioEngine:
         self.running.set()
         try:
             self.streams.append(sd.InputStream(
-                device=input_device["index"], samplerate=SAMPLE_RATE, blocksize=BLOCK,
+                device=input_device["index"], samplerate=SAMPLE_RATE, blocksize=self.block,
                 channels=1, dtype="float32", callback=self._input))
             for device, q in [(output_device, self.outputs), (monitor_device, self.monitor)]:
                 if device:
                     self.streams.append(sd.OutputStream(
-                        device=device["index"], samplerate=SAMPLE_RATE, blocksize=BLOCK,
+                        device=device["index"], samplerate=SAMPLE_RATE, blocksize=self.block,
                         channels=min(2, device["outputs"]), dtype="float32",
                         callback=lambda out, frames, timing, status, buffer=q: self._output(buffer, out)))
             self.thread = threading.Thread(target=self._worker, daemon=True)
@@ -162,6 +165,8 @@ class AudioEngine:
             self.thread.join(timeout=5)
             if self.thread.is_alive():
                 raise RuntimeError("AI 引擎未及时停止，请关闭程序后重开。")
+        if hasattr(self.processor, "close"):
+            self.processor.close()
 
     def stats(self):
         return {"processing_p95_ms": round(float(np.percentile(self.times, 95)), 2) if self.times else 0,

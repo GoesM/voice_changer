@@ -22,3 +22,7 @@ Official model 1 (2.0.0-rc.0): https://prj-beatrice.com/2.0.0-rc.0-official-mode
 VB-CABLE: https://vb-audio.com/Cable/ . Users download and install the official driver. No driver is bundled or installed silently. Commercial bundling would require a separate distribution decision.
 
 The preset adapter uses the published Beatrice serialization schema and standard VST3 preset format. No inference code or model weights are copied into this repository. Third-party model and plugin terms are not replaced by this project's GPL license.
+
+## Optional local training environment (v0.2)
+
+Applio 3.7.0 (MIT, AI Hispano), pinned commit a864a1dc5aca33386753c40c192feac53ca71682, is downloaded directly from https://github.com/IAHispano/Applio on explicit user action; its LICENSE and TERMS_OF_USE.md remain in the installed source directory. uv 0.9.5 (MIT/Apache-2.0) is downloaded from https://github.com/astral-sh/uv. Python, PyTorch/CUDA and other dependencies retain their respective licenses in the managed environment. These binaries and model weights are not included in the application archive. The optional environment downloads base weights from upstream Applio model sources; voice rights and model terms are separate from the application GPL license. No third-party voice preset is newly redistributed in v0.2.

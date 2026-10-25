@@ -9,5 +9,11 @@ dist/
 *.bin
 *.vst3/
 *.dll
+*.pth
+*.pt
+*.index
+*.onnx
+*.flac
+*.mp3
 .pytest_cache/
 

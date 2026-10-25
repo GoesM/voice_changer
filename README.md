@@ -2,16 +2,16 @@
 
 **在 Windows 11 上，把麦克风男声转换为女声，再交给会议、游戏等应用。**
 
-中文桌面界面 · 本地 AI 推理 · CPU 引擎路线 · 虚拟麦克风接入
+中文桌面界面 · 本地 AI 推理 · 官方 CPU 音色 / 自定义 GPU 音色 · 虚拟麦克风接入
 
-[下载 Windows 预览版](https://github.com/GoesM/voice_changer/releases/tag/v0.1.0) · [首次使用教程](docs/user/QUICKSTART.md) · [功能介绍](docs/user/FEATURES.md) · [常见问题](docs/user/TROUBLESHOOTING.md) · [反馈问题](https://github.com/GoesM/voice_changer/issues)
+[下载 Windows 预览版](https://github.com/GoesM/voice_changer/releases/tag/v0.2.0-alpha.1) · [首次使用教程](docs/user/QUICKSTART.md) · [功能介绍](docs/user/FEATURES.md) · [常见问题](docs/user/TROUBLESHOOTING.md) · [反馈问题](https://github.com/GoesM/voice_changer/issues)
 
-> **v0.1.0 是技术预览版。** 首次需要安装 VB-CABLE，并通过应用从 Beatrice 官方下载插件和模型；之后音频处理可离线运行。当前未完成腾讯会议/瓦洛兰特实机通话、自然度盲测及长时间稳定性验收，不将目标兼容当作已通过。程序暂未代码签名。
+> **v0.2.0-alpha.1 是实验性预览版。** 首次可在软件内启动官方 VB-CABLE 安装，并通过应用从 Beatrice 官方下载插件和模型；之后音频处理可离线运行。当前未完成腾讯会议/瓦洛兰特实机通话、自然度盲测及长时间稳定性验收，不将目标兼容当作已通过。程序暂未代码签名。
 
 ## 下载到第一次出声
 
-1. 在 [GitHub Releases](https://github.com/GoesM/voice_changer/releases) 下载 `VoiceChanger-0.1.0-win-x64.zip`，完整解压后运行 `VoiceChanger.exe`。**无需安装 Python。** `Source code.zip` 是源码，不是应用程序。
-2. 按 [下载与安装教程](docs/user/QUICKSTART.md#1-下载与安装) 安装官方 VB-CABLE，按驱动提示重启。
+1. 在 [GitHub Releases](https://github.com/GoesM/voice_changer/releases) 下载 `VoiceChanger-0.2.0-alpha.1-win-x64.zip`，完整解压后运行 `VoiceChanger.exe`。**无需安装 Python。** `Source code.zip` 是源码，不是应用程序。
+2. 点击“安装虚拟麦克风”，软件下载并校验官方 VB-CABLE；完成官方安装器步骤后按提示重启。
 3. 阅读模型条款并同意后，点击“下载并配置 AI”，约 58 MB。插件和模型不会被镜像到本仓库。
 4. 实体麦克风选你的耳机/USB 麦克风，变声输出选 **CABLE Input**，先关闭监听。
 5. 点击“开始 AI 变声”，把会议或游戏的麦克风选为 **CABLE Output**。扬声器保持正常耳机。
@@ -29,6 +29,10 @@ flowchart LR
 
 ## 已实现的亮点
 
+- **本地音色工作室（实验性）**：分段录音、WAV 导入、试听、质量门槛、取消/重试、RVC 训练后入库；[完整教程](docs/user/CUSTOM_VOICE.md)。
+- **应用内环境准备**：按需安装独立训练环境，无需用户配置 Python；训练和自定义音色推理需 NVIDIA CUDA 显卡。
+- **自定义音色双模式**：游戏与会议分别使用不同分块、上下文和检索强度；效果及总延迟仍需实测。云训练尚在开发，无上传入口。
+
 - **真实本地 AI**：标准 VST3 宿主运行 Beatrice 2，非简单升调冒充 AI；两种官方女声音色入口，支持音调/共振峰调整。
 - **离线音频链路**：联网仅用于主动下载或打开教程，无云端推理、账号服务或音频上传。
 - **中文首次配置**：下载 SHA-256 校验、选择已有模型、设备枚举与系统声音设置入口。
@@ -45,13 +49,14 @@ flowchart LR
 | 了解功能及边界 | [FEATURES](docs/user/FEATURES.md) |
 | 排查无声、卡顿、下载失败 | [TROUBLESHOOTING](docs/user/TROUBLESHOOTING.md) |
 | 编译、测试、发布 | [开发指南](docs/engineering/DEVELOPMENT.md) |
-| 查看实测与未测范围 | [验证记录](docs/validation/v0.1.0.md) |
+| 查看实测与未测范围 | [v0.2 验证记录](docs/validation/v0.2.0-alpha.1.md) / [v0.1 基线](docs/validation/v0.1.0.md) |
+| 录制、训练自己的音色 | [自定义音色教程](docs/user/CUSTOM_VOICE.md) |
 | 产品需求及交付流程 | [PRD](docs/product/PRD.md) / [验收计划](docs/product/ACCEPTANCE.md) / [流程](docs/DELIVERY.md) |
-| 下一版需求（尚未实现） | [真实音色、自定义训练与配置向导](docs/product/PRD-v0.2.md) |
+| v0.2 需求与未完成验收 | [真实音色、自定义训练与配置向导](docs/product/PRD-v0.2.md) |
 
 ## 环境与限制
 
-Windows 11 x64，需满足 [Beatrice 官方](https://prj-beatrice.com/) 的 CPU 要求。无需 CUDA 或独显，但本项目尚未给出完整验证的最低配置。固定 48 kHz、单路麦克风；蓝牙、AMD/ARM64、游戏负载需另测。首版没有任意人物克隆、热换参数、设备自动恢复或自研驱动。
+Windows 11 x64，需满足 [Beatrice 官方](https://prj-beatrice.com/) 的 CPU 要求。官方音色无需 CUDA 或独显；自定义音色训练及推理需要 NVIDIA CUDA，建议预留 15 GB 空间。本项目尚未给出完整验证的最低配置。固定 48 kHz、单路麦克风；蓝牙、AMD/ARM64、游戏负载需另测。暂不支持任意外部模型导入、热换参数、设备自动恢复或自研驱动。
 
 软件只控制虚拟输出，无法阻止应用自行切回实体麦克风。音频变声离线，会议/游戏自身仍可联网发送处理后的语音。
 

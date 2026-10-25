@@ -9,6 +9,9 @@
 - `beatrice.py`：Pedalboard 标准 VST3 宿主，版本固定的预设适配与启动自检。
 - `audio.py`：WASAPI、48 kHz/20 ms 块、独立输入输出、有界队列和后台推理。
 - `config.py`：本地 JSON，不自动开启麦克风。
+- `setup.py` / `jobs.py`：官方组件下载、驱动签名检测、独立训练环境与可取消子进程。
+- `studio.py` / `studio_ui.py`：本地素材、录音、质检和训练状态；就绪音色不原地覆盖。
+- `engine_worker.py` / `rvc.py`：固定 Applio 适配、进程隔离、二进制音频管道和离线防护。
 
 Python/PortAudio/VST 并非硬实时保证。时钟漂移当前通过有界队列及过期丢块控制，尚无自适应重采样。原生插件崩溃会影响进程；尚无插件进程隔离。
 
@@ -17,6 +20,8 @@ Python/PortAudio/VST 并非硬实时保证。时钟漂移当前通过有界队�
 Python 3.12 x64，安装 `requirements-build.txt`，运行 `python -m unittest discover -s tests -v`。
 
 真实 AI 集成测试：`python scripts/benchmark.py <插件路径> <模型TOML路径> --output benchmark.json`。插件/模型由用户从官方获取，测试用合成信号，不读麦克风，不代表音质和端到端延迟。
+
+本地 RVC 集成测试：先通过应用安装训练环境，然后运行 `python scripts/smoke_training.py --engine-root <training-engine目录> --project <新的测试项目目录>`。此命令生成 32 秒非语音合成信号，直接进行一轮训练并测试两种模式，不读取麦克风，不向用户音色库注册测试模型。它有意绕过 UI 的十分钟素材门槛，只用于工程链路验证；完整训练效果需要授权真人语料。
 
 运行 `scripts/build.ps1`：测试 → 许可证收集 → PyInstaller → EXE 自检 → ZIP 和 SHA-256。
 
