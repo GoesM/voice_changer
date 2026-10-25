@@ -6,13 +6,13 @@
 
 ## 1. 下载与安装
 
-前往 [GitHub Releases](https://github.com/GoesM/voice_changer/releases/tag/v0.1.0)，下载 `VoiceChanger-0.1.0-win-x64.zip`，完整解压后运行 `VoiceChanger.exe`。保留 `_internal` 文件夹，勿只复制 EXE。`Source code` 是源码包。
+前往 [GitHub Releases](https://github.com/GoesM/voice_changer/releases/tag/v0.2.0-alpha.1)，下载 `VoiceChanger-0.2.0-alpha.1-win-x64.zip`，完整解压后运行 `VoiceChanger.exe`。保留 `_internal` 文件夹，勿只复制 EXE。`Source code` 是源码包。
 
-使用 `Get-FileHash .\VoiceChanger-0.1.0-win-x64.zip -Algorithm SHA256` 核对下载页的 `SHA256SUMS.txt`。
+使用 `Get-FileHash .\VoiceChanger-0.2.0-alpha.1-win-x64.zip -Algorithm SHA256` 核对下载页的 `SHA256SUMS.txt`。
 
 当前 EXE 未代码签名。若系统阻止运行，先核对来源及哈希，不要关闭系统安全功能；组织策略阻止时请由管理员评估。
 
-从 [VB-CABLE 官网](https://vb-audio.com/Cable/) 下载 Windows 驱动，完整解压，按官方说明以管理员身份运行 x64 安装程序，按提示重启。软件不会静默安装驱动。
+点击应用内“安装虚拟麦克风”。软件从 [VB-CABLE 官网](https://vb-audio.com/Cable/) 下载固定版本驱动，校验 SHA-256 和数字签名后请求 Windows 管理员授权，打开官方安装器。点击 Install Driver，按提示重启。重开软件后自动枚举设备；检测不到时请检查官方安装结果。也可从官网手动安装。
 
 ## 2. 准备本地 AI
 
@@ -63,3 +63,7 @@ Windows 设置 → 系统 → 声音，把默认输入设为 CABLE Output；“�
 更新：停止旧版，解压新版到新目录，复用用户目录的模型和设置；勿同时运行两版。需要回退时重新运行旧版。
 
 卸载：退出后删除解压目录，需要清理模型时手动删除 `%LOCALAPPDATA%\VoiceChanger`。驱动独立存在，按 VB-Audio 官方方法卸载；先把系统和应用输入切回实体麦克风。
+
+## 6. 本地训练专属音色
+
+点击“录制 / 训练专属音色”，按 [本地训练教程](CUSTOM_VOICE.md) 安装独立环境、录制素材并训练。该功能需 NVIDIA CUDA 显卡，日常使用离线。云训练显示“功能仍在开发中....”。

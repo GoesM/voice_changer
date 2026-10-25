@@ -25,6 +25,8 @@ class Application:
         root.configure(bg="#f4f6fb")
         self.engine = None
         self.busy = False
+        self.loading = False
+        self.studio = None
         self.events = queue.Queue()
         self.settings = load_settings()
         self.device_list = []
@@ -33,6 +35,8 @@ class Application:
         self.pitch = tk.DoubleVar(value=float(self.settings.get("pitch", 8)))
         self.formant = tk.DoubleVar(value=float(self.settings.get("formant", 0)))
         self.voice = tk.StringVar(value=self.settings.get("voice", "自然女声 · つくよみちゃん Corpus"))
+        self.mode = tk.StringVar(value=self.settings.get("mode", "游戏低延迟"))
+        self.custom_voices = {}
         self.mute = tk.BooleanVar(value=False)
         self.agree = tk.BooleanVar(value=False)
         self.plugin_path = self.settings.get("plugin", "")
@@ -76,6 +80,7 @@ class Application:
         self.download_button = ttk.Button(row, text="下载并配置 AI（约 58 MB）", command=self.download)
         self.download_button.pack(side="left")
         ttk.Button(row, text="选择已有插件与模型…", command=self.select_assets).pack(side="left", padx=8)
+        ttk.Button(row, text="安装虚拟麦克风…", command=self.install_driver).pack(side="left")
         self.asset_label = ttk.Label(setup, text="")
         self.asset_label.pack(anchor="w", pady=(6, 0))
         route = ttk.LabelFrame(body, text="02  声音路由", padding=12)
@@ -90,12 +95,19 @@ class Application:
         route.columnconfigure(1, weight=1)
         tone = ttk.LabelFrame(body, text="03  音色调节（停止后修改，启动时生效）", padding=12)
         tone.pack(fill="x", pady=7)
-        ttk.Combobox(tone, textvariable=self.voice, state="readonly", width=45,
-                     values=["自然女声 · つくよみちゃん Corpus", "明亮女声 · つくよみちゃん UTAU"]).grid(row=0, column=0, columnspan=2, sticky="w")
+        self.voice_box = ttk.Combobox(tone, textvariable=self.voice, state="readonly", width=45)
+        self.voice_box.grid(row=0, column=0, columnspan=2, sticky="w")
+        ttk.Button(tone, text="录制 / 训练专属音色", command=self.open_studio).grid(row=0, column=2, padx=8)
         ttk.Label(tone, text="音调（半音，建议 +6 至 +12）").grid(row=1, column=0, sticky="w", pady=6)
         ttk.Spinbox(tone, from_=-24, to=24, increment=0.5, textvariable=self.pitch, width=9).grid(row=1, column=1, sticky="w")
         ttk.Label(tone, text="共振峰（建议先保持 0）").grid(row=2, column=0, sticky="w")
         ttk.Spinbox(tone, from_=-2, to=2, increment=0.25, textvariable=self.formant, width=9).grid(row=2, column=1, sticky="w")
+        ttk.Label(tone, text="自定义音色模式").grid(row=3, column=0, sticky="w", pady=8)
+        ttk.Combobox(tone, textvariable=self.mode, state="readonly", width=18,
+                     values=["游戏低延迟", "会议高音质"]).grid(row=3, column=1, sticky="w")
+        ttk.Label(tone, text="RVC 模式调整上下文和音色检索；实际延迟依显卡而定。\n"
+                  "官方音色使用固定低延迟引擎。自定义音色暂不使用共振峰调节。",
+                  font=("Microsoft YaHei UI", 9)).grid(row=4, column=0, columnspan=3, sticky="w")
         actions = ttk.Frame(body)
         actions.pack(fill="x", pady=12)
         self.start_button = ttk.Button(actions, text="开始 AI 变声", style="Accent.TButton", command=self.start)
@@ -108,6 +120,7 @@ class Application:
         ttk.Label(body, text="预览版 · 故障时停止输出，不自动切回原声。目标应用兼容性仍需实机验证。",
                   font=("Microsoft YaHei UI", 9)).pack(anchor="w", side="bottom")
         self.refresh()
+        self.refresh_voices()
         self.update_assets()
         root.protocol("WM_DELETE_WINDOW", self.close)
         root.after(200, self.poll)
@@ -133,7 +146,9 @@ class Application:
                 saved = self.settings.get(key)
                 box.set(saved if saved in values else (values[0] if values else ""))
             if not cable:
-                self.health.set("未检测到 VB-CABLE。请从官网安装虚拟麦克风驱动并按其提示重启电脑。")
+                self.health.set("未检测到虚拟麦克风。请点击‘安装虚拟麦克风’，完成安装并重启后重新打开本软件。")
+            else:
+                self.health.set("✓ 虚拟麦克风已检测到。应用麦克风请选择 CABLE Output；先用耳机监听确认变声。")
         except Exception as exc:
             self.health.set(f"设备枚举失败：{exc}")
 
@@ -154,11 +169,45 @@ class Application:
             self.update_assets()
 
     def persist(self):
-        self.settings = {"plugin": self.plugin_path, "model": self.model_path,
+        self.settings = {**self.settings, "plugin": self.plugin_path, "model": self.model_path,
                          "input": self.input_box.get(), "output": self.output_box.get(),
                          "monitor": self.monitor_box.get(), "voice": self.voice.get(),
-                         "pitch": self.pitch.get(), "formant": self.formant.get()}
+                         "pitch": self.pitch.get(), "formant": self.formant.get(), "mode": self.mode.get()}
         save_settings(self.settings)
+
+    def refresh_voices(self):
+        from .studio import list_voices
+        self.custom_voices = dict(list_voices())
+        self.voice_box["values"] = ["自然女声 · つくよみちゃん Corpus", "明亮女声 · つくよみちゃん UTAU"] + list(self.custom_voices)
+        if self.voice.get() not in self.voice_box["values"]:
+            self.voice.set("自然女声 · つくよみちゃん Corpus")
+
+    def open_studio(self):
+        if self.engine or self.busy:
+            messagebox.showinfo("请先停止变声", "训练和录音需要独占资源，请先停止当前任务。")
+            return
+        from .studio_ui import Studio
+        if self.studio and self.studio.window.winfo_exists():
+            self.studio.window.lift()
+            return
+        self.studio = Studio(self)
+
+    def install_driver(self):
+        if self.busy or self.engine:
+            return
+        if not messagebox.askokcancel("安装虚拟麦克风", "将从 VB-Audio 官网下载并校验驱动，随后打开官方安装器。\n"
+                "请阅读安装器条款，点击 Install Driver，并按提示重启电脑。\nWindows 会要求管理员授权。是否继续？"):
+            return
+        self.busy = True
+        def work():
+            from .setup import prepare_driver
+            from .jobs import Job
+            try:
+                installer = prepare_driver(lambda msg: self.events.put(("progress", msg)), Job())
+                self.events.put(("driver", installer))
+            except Exception as exc:
+                self.events.put(("failed", str(exc)))
+        threading.Thread(target=work, daemon=True).start()
 
     def download(self):
         if self.busy or self.engine:
@@ -195,20 +244,32 @@ class Application:
             self.persist()
             self.status.set("加载本地模型并自检…")
             self.root.update_idletasks()
-            processor = BeatriceProcessor(self.plugin_path, self.model_path,
-                                          1 if "Corpus" in self.voice.get() else 0,
-                                          self.pitch.get(), self.formant.get())
-            self.engine = AudioEngine(processor)
-            self.engine.set_muted(self.mute.get())
-            self.engine.start(mic, out, monitor)
+            self.busy = self.loading = True
             self.start_button.configure(state="disabled")
-            self.status.set("AI 变声运行中 · 本地离线处理")
+            project = self.custom_voices.get(self.voice.get())
+            mode = "game" if self.mode.get() == "游戏低延迟" else "meeting"
+            pitch, formant = self.pitch.get(), self.formant.get()
+            speaker = 1 if "Corpus" in self.voice.get() else 0
+            def work():
+                try:
+                    if project:
+                        from .rvc import RvcProcessor
+                        processor = RvcProcessor(project, mode, pitch)
+                    else:
+                        processor = BeatriceProcessor(self.plugin_path, self.model_path, speaker, pitch, formant)
+                    self.events.put(("loaded", (processor, mic, out, monitor)))
+                except Exception as exc:
+                    self.events.put(("load_failed", str(exc)))
+            threading.Thread(target=work, daemon=True).start()
         except Exception as exc:
             self.stop()
             self.status.set("启动失败 · 未输出原声")
             messagebox.showerror("无法启动", str(exc))
 
     def stop(self):
+        if self.loading:
+            self.status.set("正在加载模型，请等待自检完成后停止。")
+            return
         if self.engine:
             try:
                 self.engine.stop()
@@ -244,7 +305,32 @@ class Application:
                 else:
                     self.busy = False
                     self.download_button.configure(state="normal")
-                    if kind == "installed":
+                    if kind in ("loaded", "load_failed"):
+                        self.loading = False
+                        if kind == "loaded":
+                            processor, mic, out, monitor = value
+                            try:
+                                self.engine = AudioEngine(processor, getattr(processor, "block", 960))
+                                self.engine.set_muted(self.mute.get())
+                                self.engine.start(mic, out, monitor)
+                                self.status.set("AI 变声运行中 · 本地离线处理")
+                            except Exception as exc:
+                                self.stop()
+                                messagebox.showerror("无法启动", str(exc))
+                        else:
+                            self.start_button.configure(state="normal")
+                            self.status.set("启动失败 · 未输出原声")
+                            messagebox.showerror("无法加载音色", value)
+                    elif kind == "driver":
+                        from .setup import launch_driver
+                        try:
+                            launch_driver(value)
+                            self.settings["driver_setup"] = "awaiting_device_after_restart"
+                            self.persist()
+                            self.status.set("官方安装器已打开；完成安装并重启后，重新打开软件检测。")
+                        except Exception as exc:
+                            messagebox.showerror("驱动安装", str(exc))
+                    elif kind == "installed":
                         self.plugin_path, self.model_path = map(str, value)
                         self.persist()
                         self.update_assets()
@@ -269,6 +355,13 @@ class Application:
         self.root.after(200, self.poll)
 
     def close(self):
+        if self.studio and self.studio.window.winfo_exists():
+            self.studio.close()
+            if self.studio.window.winfo_exists():
+                return
+        if self.loading:
+            messagebox.showinfo("正在加载", "请等待模型自检结束后关闭。")
+            return
         if self.busy and not messagebox.askyesno("正在下载", "退出会中断下载，下次可重新下载。现在退出？"):
             return
         self.stop()
