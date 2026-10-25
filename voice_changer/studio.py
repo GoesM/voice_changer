@@ -133,6 +133,8 @@ class Recorder:
 def train(project, epochs, progress, job):
     if not engine_ready():
         raise RuntimeError("请先安装本地训练环境。")
+    if shutil.disk_usage(project).free < 5 * 1024**3:
+        raise RuntimeError("训练前请至少预留 5 GB 可用空间，用于切片、特征和检查点。")
     report = dataset_report(project)
     if not report["ready"]:
         raise ValueError("需要至少 10 分钟素材，其中有效声音至少 5 分钟，且没有明显削波。")

@@ -27,7 +27,11 @@ class RvcProcessor:
                 creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
             self.reader = threading.Thread(target=self._read, daemon=True)
             self.reader.start()
-            if self.responses.get(timeout=180) != b"READY\n":
+            try:
+                ready = self.responses.get(timeout=180)
+            except queue.Empty:
+                raise RuntimeError("自定义音色加载超过 3 分钟，已停止。请检查显存和 inference.log。") from None
+            if ready != b"READY\n":
                 raise RuntimeError("自定义音色未能加载，请查看音色目录的 inference.log。")
         except Exception:
             self.close()
@@ -79,5 +83,8 @@ class RvcProcessor:
                     self.process.wait(timeout=5)
             for stream in (self.process.stdin, self.process.stdout):
                 if stream:
-                    stream.close()
+                    try:
+                        stream.close()
+                    except OSError:
+                        pass
         self.log.close()

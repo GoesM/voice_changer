@@ -53,7 +53,10 @@ def prepare_driver(progress, job):
     installer = root / "official/VBCABLE_Setup_x64.exe"
     # Supply the path via environment, not interpolated PowerShell source.
     env = dict(os.environ, VOICE_CHANGER_INSTALLER=str(installer))
-    result = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command",
+    # PowerShell 7 launchers can export an incompatible module search path to 5.1.
+    env = {key: value for key, value in env.items() if key.upper() != "PSMODULEPATH"}
+    powershell = Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32/WindowsPowerShell/v1.0/powershell.exe"
+    result = subprocess.run([str(powershell), "-NoProfile", "-NonInteractive", "-Command",
         "(Get-AuthenticodeSignature -LiteralPath $env:VOICE_CHANGER_INSTALLER).Status.ToString()"],
         env=env, capture_output=True, text=True, creationflags=subprocess.CREATE_NO_WINDOW, timeout=30)
     if result.returncode or result.stdout.strip() != "Valid":

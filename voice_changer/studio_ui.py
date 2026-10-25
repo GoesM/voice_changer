@@ -4,6 +4,7 @@ import queue
 import threading
 import tkinter as tk
 import wave
+import webbrowser
 import numpy as np
 import sounddevice as sd
 from tkinter import ttk, messagebox, filedialog, simpledialog
@@ -26,8 +27,16 @@ class Studio:
         self.job = None
         self.events = queue.Queue()
         self.state = tk.StringVar(value="先创建音色项目，再录制或导入素材。")
-        body = ttk.Frame(self.window, padding=20)
-        body.pack(fill="both", expand=True)
+        canvas = tk.Canvas(self.window, bg="#f4f6fb", highlightthickness=0)
+        scroll = ttk.Scrollbar(self.window, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=scroll.set)
+        scroll.pack(side="right", fill="y")
+        canvas.pack(side="left", fill="both", expand=True)
+        body = ttk.Frame(canvas, padding=20)
+        item = canvas.create_window((0, 0), window=body, anchor="nw")
+        body.bind("<Configure>", lambda event: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.bind("<Configure>", lambda event: canvas.itemconfigure(item, width=event.width))
+        self.window.bind("<MouseWheel>", lambda event: canvas.yview_scroll(int(-event.delta / 120), "units"))
         ttk.Label(body, text="录下声音，训练专属音色", font=("Microsoft YaHei UI", 18, "bold")).pack(anchor="w")
         ttk.Label(body, text="请使用本人或获得授权的目标声音。安静环境、无伴奏，累计 10–20 分钟。\n"
                   "录制的是希望转换成的声音；男声素材不会自动训练出女声音色。", wraplength=700).pack(anchor="w", pady=8)
@@ -42,6 +51,8 @@ class Studio:
             self.buttons.append(button)
         ttk.Label(body, text="首次安装需联网下载数 GB，建议至少 15 GB 空间；训练需要 NVIDIA CUDA 显卡。\n"
                   "训练耗时取决于素材和显卡；训练期间建议停止游戏。", wraplength=700).pack(anchor="w")
+        ttk.Button(body, text="训练教程与组件条款 ↗", command=lambda: webbrowser.open(
+            "https://github.com/GoesM/voice_changer/blob/main/docs/user/CUSTOM_VOICE.md")).pack(anchor="w", pady=5)
         self.project_label = ttk.Label(body, text="尚未选择项目")
         self.project_label.pack(anchor="w", pady=12)
         row = ttk.Frame(body)
@@ -74,10 +85,11 @@ class Studio:
         self.progress = ttk.Progressbar(body, mode="indeterminate")
         self.progress.pack(fill="x")
         ttk.Button(body, text="打开项目 / 日志目录", command=self.open_folder).pack(anchor="w", pady=12)
-        ttk.Label(body, text="没有云端上传入口。取消保留素材与训练检查点，再次开始会复用同一项目。\n"
+        ttk.Label(body, text="云训练：功能仍在开发中.... 本版没有上传入口。\n"
+                  "取消保留素材与训练检查点，再次开始会复用同一项目。\n"
                   "音量检查无法识别背景人声、混响或发音问题，请自行试听素材。", wraplength=700).pack(anchor="w")
         self.window.protocol("WM_DELETE_WINDOW", self.close)
-        self.window.after(200, self.poll)
+        self.timer = self.window.after(200, self.poll)
 
     def allowed(self, project=True):
         if self.job or self.recorder:
@@ -96,8 +108,11 @@ class Studio:
             return
         name = simpledialog.askstring("音色名称", "给新音色起个名字：", parent=self.window)
         if name:
-            self.project = new_project(name)
-            self.report()
+            try:
+                self.project = new_project(name)
+                self.report()
+            except Exception as exc:
+                messagebox.showerror("无法创建音色", str(exc), parent=self.window)
 
     def choose(self):
         if not self.allowed(False):
@@ -245,7 +260,7 @@ class Studio:
             self.state.set(f"正在录音：{self.recorder.frames / 48000:.0f} 秒；目标累计 10–20 分钟。")
             if self.recorder.error or self.recorder.frames >= 48000 * 1200:
                 self.stop_record()
-        self.window.after(200, self.poll)
+        self.timer = self.window.after(200, self.poll)
 
     def close(self):
         if self.job:
@@ -254,5 +269,6 @@ class Studio:
         if self.recorder:
             self.stop_record()
         sd.stop()
+        self.window.after_cancel(self.timer)
         self.window.grab_release()
         self.window.destroy()

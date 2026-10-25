@@ -1,6 +1,10 @@
 import json
 from pathlib import Path
 import tempfile
+import os
+import socket
+import sys
+import subprocess
 import unittest
 from unittest.mock import patch
 import wave
@@ -9,7 +13,8 @@ import numpy as np
 
 from voice_changer.jobs import Job, Cancelled
 from voice_changer.studio import analyze_wav, dataset_report, new_project, train, list_voices
-from voice_changer.setup import fetch
+from voice_changer.setup import fetch, prepare_driver
+from voice_changer.engine_worker import offline
 
 
 class StudioTests(unittest.TestCase):
@@ -80,6 +85,40 @@ class StudioTests(unittest.TestCase):
         with patch("urllib.request.urlopen", side_effect=OSError("offline")):
             with self.assertRaises(OSError):
                 fetch(("https://example.org/file", "0" * 64), path, lambda _: None, Job())
+
+    def test_failed_child_process_is_not_reported_as_success(self):
+        with self.assertRaises(RuntimeError):
+            Job().run([sys.executable, "-c", "raise SystemExit(9)"], self.root,
+                      lambda _: None, self.root / "job.log")
+
+    def test_offline_inference_rejects_network_connections(self):
+        with patch("socket.socket.connect"), patch("socket.socket.connect_ex"), \
+             patch("socket.create_connection"), patch.dict(os.environ):
+            offline()
+            with self.assertRaises(RuntimeError):
+                socket.create_connection(("example.org", 443))
+            self.assertEqual(os.environ["HF_HUB_OFFLINE"], "1")
+
+    def test_retraining_does_not_remove_existing_ready_voice(self):
+        project = new_project("可用音色")
+        metadata = project / "project.json"
+        metadata.write_text(json.dumps({"name": "可用音色", "state": "ready"}), encoding="utf-8")
+        (project / "model.pth").write_bytes(b"fixture")
+        (project / "model.index").write_bytes(b"fixture")
+        with patch("voice_changer.studio.engine_ready", return_value=True), \
+             patch("voice_changer.studio.dataset_report", return_value={"ready": True}):
+            with self.assertRaises(ValueError):
+                train(project, 100, lambda _: None, Job())
+        self.assertEqual(len(list_voices()), 1)
+
+    def test_driver_check_does_not_inherit_powershell_7_modules(self):
+        with patch.dict(os.environ, {"PSMODULEPATH": "incompatible-powershell-7-modules"}), \
+             patch("voice_changer.setup.data_dir", return_value=self.root), \
+             patch("voice_changer.setup.fetch", return_value=self.root / "driver.zip"), \
+             patch("voice_changer.setup.extract_checked"), \
+             patch("voice_changer.setup.subprocess.run", return_value=subprocess.CompletedProcess([], 0, "Valid\n", "")) as run:
+            prepare_driver(lambda _: None, Job())
+            self.assertFalse(any(key.upper() == "PSMODULEPATH" for key in run.call_args.kwargs["env"]))
 
 
 if __name__ == "__main__":
