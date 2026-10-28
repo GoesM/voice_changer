@@ -12,19 +12,21 @@ from tkinter import ttk, messagebox, filedialog, simpledialog
 from .jobs import Job
 from .setup import engine_ready, engine_root, install_engine
 from .studio import (new_project, projects_root, dataset_report, import_wav, Recorder, train)
+from . import materials
 
 
 class Studio:
     def __init__(self, app):
         self.app = app
         self.window = tk.Toplevel(app.root)
-        self.window.title("自定义音色 · 本地训练")
+        self.window.title("素材库 · 引导采集 · 本地训练")
         self.window.geometry("800x780")
         self.window.transient(app.root)
         self.window.grab_set()
         self.project = None
         self.recorder = None
         self.job = None
+        self.guide = None
         self.events = queue.Queue()
         self.state = tk.StringVar(value="先创建音色项目，再录制或导入素材。")
         canvas = tk.Canvas(self.window, bg="#f4f6fb", highlightthickness=0)
@@ -45,7 +47,7 @@ class Studio:
         row = ttk.Frame(body)
         row.pack(fill="x", pady=10)
         self.buttons = []
-        for text, command in [("新建音色", self.create), ("继续已有项目", self.choose), ("安装 / 修复训练环境", self.install)]:
+        for text, command in [("新建素材集", self.create), ("打开旧项目目录", self.choose), ("安装 / 修复训练环境", self.install)]:
             button = ttk.Button(row, text=text, command=command)
             button.pack(side="left", padx=3)
             self.buttons.append(button)
@@ -53,7 +55,17 @@ class Studio:
                   "训练耗时取决于素材和显卡；训练期间建议停止游戏。", wraplength=700).pack(anchor="w")
         ttk.Button(body, text="训练教程与组件条款 ↗", command=lambda: webbrowser.open(
             "https://github.com/GoesM/voice_changer/blob/main/docs/user/CUSTOM_VOICE.md")).pack(anchor="w", pady=5)
-        self.project_label = ttk.Label(body, text="尚未选择项目")
+        ttk.Label(body, text="每个素材集只收集同一个说话人的声音；不包含明星录音。选择已有素材集：").pack(anchor="w", pady=(10, 2))
+        self.collection_box = ttk.Combobox(body, state="readonly")
+        self.collection_box.pack(fill="x")
+        self.collection_box.bind("<<ComboboxSelected>>", self.select_collection)
+        row = ttk.Frame(body)
+        row.pack(fill="x", pady=5)
+        for text, command in [("重命名素材集", self.rename_collection), ("复制为新训练项目", self.copy_collection), ("原创稿件 · 引导朗读", self.open_guide)]:
+            button = ttk.Button(row, text=text, command=command)
+            button.pack(side="left", padx=3)
+            self.buttons.append(button)
+        self.project_label = ttk.Label(body, text="尚未选择素材集")
         self.project_label.pack(anchor="w", pady=12)
         row = ttk.Frame(body)
         row.pack(fill="x")
@@ -68,7 +80,7 @@ class Studio:
         self.clip_list.pack(fill="x")
         row = ttk.Frame(body)
         row.pack(fill="x", pady=5)
-        for text, command in [("试听所选素材（耳机）", self.play), ("停止试听", sd.stop), ("删除所选素材", self.delete)]:
+        for text, command in [("试听所选素材（耳机）", self.play), ("停止试听", sd.stop), ("重命名素材", self.rename_clip), ("移除所选素材", self.delete)]:
             button = ttk.Button(row, text=text, command=command)
             button.pack(side="left", padx=3)
             self.buttons.append(button)
@@ -89,10 +101,71 @@ class Studio:
                   "取消保留素材与训练检查点，再次开始会复用同一项目。\n"
                   "音量检查无法识别背景人声、混响或发音问题，请自行试听素材。", wraplength=700).pack(anchor="w")
         self.window.protocol("WM_DELETE_WINDOW", self.close)
+        self.refresh_collections()
         self.timer = self.window.after(200, self.poll)
 
+    def refresh_collections(self):
+        self.collection_map = dict(materials.collections())
+        self.collection_box["values"] = list(self.collection_map)
+        self.collection_box.set(next((name for name, path in self.collection_map.items() if path == self.project), ""))
+
+    def select_collection(self, event=None):
+        if not self.allowed(False):
+            self.refresh_collections()
+            return
+        sd.stop()
+        self.project = self.collection_map.get(self.collection_box.get())
+        self.report()
+
+    def rename_collection(self):
+        if not self.allowed():
+            return
+        name = simpledialog.askstring("重命名素材集", "同一说话人的素材集名称：", parent=self.window)
+        if name:
+            try:
+                materials.rename_collection(self.project, name)
+                self.report()
+                self.app.refresh_voices()
+            except Exception as exc:
+                messagebox.showerror("无法重命名", str(exc), parent=self.window)
+
+    def copy_collection(self):
+        if not self.allowed():
+            return
+        name = simpledialog.askstring("复制素材集", "新项目名称（只复制已确认素材，不复制模型或待确认录音）：", parent=self.window)
+        if name:
+            source = self.project
+            def work(progress, job):
+                job.check()
+                progress("正在复制素材…")
+                target = materials.copy_collection(source, name, job.check)
+                self.events.put(("collection", target))
+            self.run(work)
+
+    def rename_clip(self):
+        if not self.allowed() or not self.clip_list.curselection():
+            return
+        clip = self.clips[self.clip_list.curselection()[0]]
+        label = simpledialog.askstring("素材名称", "给这段素材起个容易辨认的名字：", parent=self.window)
+        if label:
+            try:
+                materials.rename_clip(self.project, clip.name, label)
+                self.report()
+            except Exception as exc:
+                messagebox.showerror("无法重命名", str(exc), parent=self.window)
+
+    def open_guide(self):
+        if not self.allowed():
+            return
+        from .reading_ui import ReadingGuide
+        try:
+            sd.stop()
+            self.guide = ReadingGuide(self)
+        except Exception as exc:
+            messagebox.showerror("无法打开朗读稿", str(exc), parent=self.window)
+
     def allowed(self, project=True):
-        if self.job or self.recorder:
+        if self.job or self.recorder or self.guide:
             messagebox.showinfo("任务进行中", "请先停止录音或等待当前任务结束。", parent=self.window)
             return False
         if project and not self.project:
@@ -132,11 +205,15 @@ class Studio:
             return
         try:
             meta = json.loads((self.project / "project.json").read_text(encoding="utf-8"))
+            self.refresh_collections()
             self.project_label.configure(text=f"当前音色：{meta['name']} · 状态：{meta['state']}")
-            self.clips = sorted((self.project / "recordings").glob("*.wav"))
+            entries = materials.list_clips(self.project)
+            self.clips = [entry["path"] for entry in entries]
             self.clip_list.delete(0, "end")
-            for number, clip in enumerate(self.clips, 1):
-                self.clip_list.insert("end", f"素材 {number:02d} · {clip.name[:8]}")
+            for entry in entries:
+                q = entry["quality"]
+                self.clip_list.insert("end", f"{entry['label']} · {q['seconds']:.1f} 秒 · {entry['source']}"
+                                      + (" · 建议重录" if q['clipping'] > .005 else ""))
             report = dataset_report(self.project)
             self.quality.set(f"{report['files']} 段 · 总时长 {report['seconds'] / 60:.1f} 分钟 · "
                 f"有效声音约 {report['active_seconds'] / 60:.1f} 分钟 · 削波素材 {report['clipped_files']} 段\n"
@@ -165,6 +242,7 @@ class Studio:
         recorder, self.recorder = self.recorder, None
         try:
             recorder.stop()
+            materials.register_clip(self.project, recorder.path)
             self.state.set("录音已保存在本机。")
         except Exception as exc:
             messagebox.showerror("录音", str(exc), parent=self.window)
@@ -176,7 +254,9 @@ class Studio:
         paths = filedialog.askopenfilenames(filetypes=[("16 位 PCM WAV", "*.wav")], parent=self.window)
         try:
             for path in paths:
-                import_wav(self.project, path)
+                from pathlib import Path
+                target = import_wav(self.project, path)
+                materials.register_clip(self.project, target, Path(path).stem, "用户导入")
         except Exception as exc:
             messagebox.showerror("素材导入", str(exc), parent=self.window)
         self.report()
@@ -211,10 +291,13 @@ class Studio:
     def delete(self):
         if not self.allowed() or not self.clip_list.curselection():
             return
-        if messagebox.askyesno("删除素材", "删除所选本地素材？此操作无法撤回。", parent=self.window):
+        if messagebox.askyesno("移除素材", "从训练素材中移除所选录音？原文件会保留在项目的 .trash 文件夹。", parent=self.window):
             sd.stop()
-            self.clips[self.clip_list.curselection()[0]].unlink()
-            self.report()
+            try:
+                materials.remove_clip(self.project, self.clips[self.clip_list.curselection()[0]].name)
+                self.report()
+            except Exception as exc:
+                messagebox.showerror("无法移除", str(exc), parent=self.window)
 
     def install(self):
         if self.allowed(False) and messagebox.askokcancel("安装本地环境", "将联网下载 Applio、Python、CUDA 依赖和基础模型，可能需要数 GB。\n"
@@ -245,6 +328,9 @@ class Studio:
         try:
             while True:
                 kind, text = self.events.get_nowait()
+                if kind == "collection":
+                    self.project = text
+                    continue
                 self.state.set(text)
                 if kind != "progress":
                     self.job = None
@@ -263,6 +349,8 @@ class Studio:
         self.timer = self.window.after(200, self.poll)
 
     def close(self):
+        if self.guide:
+            self.guide.close()
         if self.job:
             messagebox.showinfo("任务进行中", "请先取消任务并等待退出，再关闭窗口。", parent=self.window)
             return

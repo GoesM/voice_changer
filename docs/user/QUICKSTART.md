@@ -6,9 +6,9 @@
 
 ## 1. 下载与安装
 
-前往 [GitHub Releases](https://github.com/GoesM/voice_changer/releases/tag/v0.2.0-alpha.1)，下载 `VoiceChanger-0.2.0-alpha.1-win-x64.zip`，完整解压后运行 `VoiceChanger.exe`。保留 `_internal` 文件夹，勿只复制 EXE。`Source code` 是源码包。
+前往 [GitHub Releases](https://github.com/GoesM/voice_changer/releases/tag/v0.3.0-alpha.1)，下载 `VoiceChanger-0.3.0-alpha.1-win-x64.zip`，完整解压后运行 `VoiceChanger.exe`。保留 `_internal` 文件夹，勿只复制 EXE。`Source code` 是源码包。
 
-使用 `Get-FileHash .\VoiceChanger-0.2.0-alpha.1-win-x64.zip -Algorithm SHA256` 核对下载页的 `SHA256SUMS.txt`。
+使用 `Get-FileHash .\VoiceChanger-0.3.0-alpha.1-win-x64.zip -Algorithm SHA256` 核对下载页的 `SHA256SUMS.txt`。
 
 当前 EXE 未代码签名。若系统阻止运行，先核对来源及哈希，不要关闭系统安全功能；组织策略阻止时请由管理员评估。
 
@@ -66,4 +66,8 @@ Windows 设置 → 系统 → 声音，把默认输入设为 CABLE Output；“�
 
 ## 6. 本地训练专属音色
 
-点击“录制 / 训练专属音色”，按 [本地训练教程](CUSTOM_VOICE.md) 安装独立环境、录制素材并训练。该功能需 NVIDIA CUDA 显卡，日常使用离线。云训练显示“功能仍在开发中....”。
+点击“素材库 / 朗读采集 / 训练”，按 [本地训练教程](CUSTOM_VOICE.md) 安装独立环境、录制素材并训练。该功能需 NVIDIA CUDA 显卡，日常使用离线。云训练显示“功能仍在开发中....”。
+
+## 7. 素材管理与稿件采集
+
+新建素材集后，点击“原创稿件 · 引导朗读”，逐段录音、试听并确认。40 段稿件已随应用提供，关闭后可继续。[详细操作](MATERIALS_AND_READING.md)。Release 的 ReadingKit 是可独立阅读的文字包，不含明星录音。

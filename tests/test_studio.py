@@ -5,6 +5,7 @@ import os
 import socket
 import sys
 import subprocess
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 import wave
@@ -23,8 +24,11 @@ class StudioTests(unittest.TestCase):
         self.root = Path(self.temp.name)
         self.patch = patch("voice_changer.studio.projects_root", return_value=self.root)
         self.patch.start()
+        self.disk_patch = patch("voice_changer.studio.shutil.disk_usage", return_value=SimpleNamespace(free=10 * 1024**3))
+        self.disk_patch.start()
 
     def tearDown(self):
+        self.disk_patch.stop()
         self.patch.stop()
         self.temp.cleanup()
 

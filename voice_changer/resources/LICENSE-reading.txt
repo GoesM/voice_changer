@@ -1,0 +1,14 @@
+Original Chinese reading script — Voice Changer
+SPDX-License-Identifier: CC0-1.0
+
+The original text in reading_zh.txt and reading_zh.json is dedicated to the
+public domain under CC0 1.0 Universal:
+https://creativecommons.org/publicdomain/zero/1.0/legalcode
+
+You may read, copy, modify, redistribute and use this text for voice recording
+and model training, including commercial use, without attribution requirements.
+This dedication applies only to the original script text, not to recordings,
+voice identities, trained models, third-party material, or the application code.
+
+本朗读稿为本项目原创内容，以 CC0-1.0 提供，可用于朗读、录音、训练、修改和再分发。
+此声明仅涵盖稿件文字，不替代录音、说话人或模型的使用许可。
