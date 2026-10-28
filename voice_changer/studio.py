@@ -75,8 +75,10 @@ def import_wav(project, path):
 
 
 class Recorder:
-    def __init__(self, project, device):
-        self.path = project / "recordings" / (uuid.uuid4().hex + ".wav")
+    def __init__(self, project, device, directory=None):
+        folder = directory or project / "recordings"
+        folder.mkdir(parents=True, exist_ok=True)
+        self.path = folder / (uuid.uuid4().hex + ".wav")
         self.queue = queue.Queue(maxsize=100)
         self.finished = threading.Event()
         self.error = ""

@@ -4,13 +4,13 @@
 
 中文桌面界面 · 本地 AI 推理 · 官方 CPU 音色 / 自定义 GPU 音色 · 虚拟麦克风接入
 
-[下载 Windows 预览版](https://github.com/GoesM/voice_changer/releases/tag/v0.2.0-alpha.1) · [首次使用教程](docs/user/QUICKSTART.md) · [功能介绍](docs/user/FEATURES.md) · [常见问题](docs/user/TROUBLESHOOTING.md) · [反馈问题](https://github.com/GoesM/voice_changer/issues)
+[下载 Windows 预览版](https://github.com/GoesM/voice_changer/releases/tag/v0.3.0-alpha.1) · [首次使用教程](docs/user/QUICKSTART.md) · [功能介绍](docs/user/FEATURES.md) · [常见问题](docs/user/TROUBLESHOOTING.md) · [反馈问题](https://github.com/GoesM/voice_changer/issues)
 
-> **v0.2.0-alpha.1 是实验性预览版。** 首次可在软件内启动官方 VB-CABLE 安装，并通过应用从 Beatrice 官方下载插件和模型；之后音频处理可离线运行。当前未完成腾讯会议/瓦洛兰特实机通话、自然度盲测及长时间稳定性验收，不将目标兼容当作已通过。程序暂未代码签名。
+> **v0.3.0-alpha.1 是实验性预览版。** 首次可在软件内启动官方 VB-CABLE 安装，并通过应用从 Beatrice 官方下载插件和模型；之后音频处理可离线运行。当前未完成腾讯会议/瓦洛兰特实机通话、自然度盲测及长时间稳定性验收，不将目标兼容当作已通过。程序暂未代码签名。
 
 ## 下载到第一次出声
 
-1. 在 [GitHub Releases](https://github.com/GoesM/voice_changer/releases) 下载 `VoiceChanger-0.2.0-alpha.1-win-x64.zip`，完整解压后运行 `VoiceChanger.exe`。**无需安装 Python。** `Source code.zip` 是源码，不是应用程序。
+1. 在 [GitHub Releases](https://github.com/GoesM/voice_changer/releases) 下载 `VoiceChanger-0.3.0-alpha.1-win-x64.zip`，完整解压后运行 `VoiceChanger.exe`。**无需安装 Python。** `Source code.zip` 是源码，不是应用程序。
 2. 点击“安装虚拟麦克风”，软件下载并校验官方 VB-CABLE；完成官方安装器步骤后按提示重启。
 3. 阅读模型条款并同意后，点击“下载并配置 AI”，约 58 MB。插件和模型不会被镜像到本仓库。
 4. 实体麦克风选你的耳机/USB 麦克风，变声输出选 **CABLE Input**，先关闭监听。
@@ -28,6 +28,10 @@ flowchart LR
 ```
 
 ## 已实现的亮点
+
+- **素材集管理**：选择、重命名和复制已有项目；素材显示名称、时长、来源，可试听和移除。
+- **原创稿件引导采集**：40 段约 4,900 字，逐段录音、试听、确认和下次继续。待确认录音不参与训练；[素材与朗读教程](docs/user/MATERIALS_AND_READING.md)。
+- **配套文字稿件包**：Release 提供 ReadingKit，采用 CC0；应用也已内置。文字包不包含明星录音、用户录音或模型。
 
 - **本地音色工作室（实验性）**：分段录音、WAV 导入、试听、质量门槛、取消/重试、RVC 训练后入库；[完整教程](docs/user/CUSTOM_VOICE.md)。
 - **应用内环境准备**：按需安装独立训练环境，无需用户配置 Python；训练和自定义音色推理需 NVIDIA CUDA 显卡。
@@ -49,10 +53,12 @@ flowchart LR
 | 了解功能及边界 | [FEATURES](docs/user/FEATURES.md) |
 | 排查无声、卡顿、下载失败 | [TROUBLESHOOTING](docs/user/TROUBLESHOOTING.md) |
 | 编译、测试、发布 | [开发指南](docs/engineering/DEVELOPMENT.md) |
-| 查看实测与未测范围 | [v0.2 验证记录](docs/validation/v0.2.0-alpha.1.md) / [v0.1 基线](docs/validation/v0.1.0.md) |
+| 查看实测与未测范围 | [v0.3 验证记录](docs/validation/v0.3.0-alpha.1.md) / [v0.1 基线](docs/validation/v0.1.0.md) |
+| 管理素材、跟随稿件采集 | [素材库与引导朗读](docs/user/MATERIALS_AND_READING.md) |
 | 录制、训练自己的音色 | [自定义音色教程](docs/user/CUSTOM_VOICE.md) |
 | 产品需求及交付流程 | [PRD](docs/product/PRD.md) / [验收计划](docs/product/ACCEPTANCE.md) / [流程](docs/DELIVERY.md) |
 | v0.2 需求与未完成验收 | [真实音色、自定义训练与配置向导](docs/product/PRD-v0.2.md) |
+| v0.3 素材和采集范围 | [素材集与原创稿件需求](docs/product/PRD-v0.3.md) |
 
 ## 环境与限制
 

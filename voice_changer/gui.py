@@ -97,7 +97,7 @@ class Application:
         tone.pack(fill="x", pady=7)
         self.voice_box = ttk.Combobox(tone, textvariable=self.voice, state="readonly", width=45)
         self.voice_box.grid(row=0, column=0, columnspan=2, sticky="w")
-        ttk.Button(tone, text="录制 / 训练专属音色", command=self.open_studio).grid(row=0, column=2, padx=8)
+        ttk.Button(tone, text="素材库 / 朗读采集 / 训练", command=self.open_studio).grid(row=0, column=2, padx=8)
         ttk.Label(tone, text="音调（半音，建议 +6 至 +12）").grid(row=1, column=0, sticky="w", pady=6)
         ttk.Spinbox(tone, from_=-24, to=24, increment=0.5, textvariable=self.pitch, width=9).grid(row=1, column=1, sticky="w")
         ttk.Label(tone, text="共振峰（建议先保持 0）").grid(row=2, column=0, sticky="w")

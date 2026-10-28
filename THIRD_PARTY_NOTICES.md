@@ -26,3 +26,7 @@ The preset adapter uses the published Beatrice serialization schema and standard
 ## Optional local training environment (v0.2)
 
 Applio 3.7.0 (MIT, AI Hispano), pinned commit a864a1dc5aca33386753c40c192feac53ca71682, is downloaded directly from https://github.com/IAHispano/Applio on explicit user action; its LICENSE and TERMS_OF_USE.md remain in the installed source directory. uv 0.9.5 (MIT/Apache-2.0) is downloaded from https://github.com/astral-sh/uv. Python, PyTorch/CUDA and other dependencies retain their respective licenses in the managed environment. These binaries and model weights are not included in the application archive. The optional environment downloads base weights from upstream Applio model sources; voice rights and model terms are separate from the application GPL license. No third-party voice preset is newly redistributed in v0.2.
+
+## Original reading script (v0.3)
+
+The original Chinese script in voice_changer/resources/reading_zh.txt and reading_zh.json is provided under CC0-1.0; see voice_changer/resources/LICENSE-reading.txt. This is original project content, not third-party speech or celebrity recordings. The application code remains GPL-3.0.

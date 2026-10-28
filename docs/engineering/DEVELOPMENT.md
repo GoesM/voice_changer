@@ -12,6 +12,8 @@
 - `setup.py` / `jobs.py`：官方组件下载、驱动签名检测、独立训练环境与可取消子进程。
 - `studio.py` / `studio_ui.py`：本地素材、录音、质检和训练状态；就绪音色不原地覆盖。
 - `engine_worker.py` / `rvc.py`：固定 Applio 适配、进程隔离、二进制音频管道和离线防护。
+- `materials.py`：素材集名称、来源、质量缓存、复制与移除；兼容旧项目。
+- `reading.py` / `reading_ui.py`：原创稿件、待确认录音与恢复状态；`.takes`、`.trash` 与训练目录隔离。
 
 Python/PortAudio/VST 并非硬实时保证。时钟漂移当前通过有界队列及过期丢块控制，尚无自适应重采样。原生插件崩溃会影响进程；尚无插件进程隔离。
 
@@ -24,6 +26,8 @@ Python 3.12 x64，安装 `requirements-build.txt`，运行 `python -m unittest d
 本地 RVC 集成测试：先通过应用安装训练环境，然后运行 `python scripts/smoke_training.py --engine-root <training-engine目录> --project <新的测试项目目录>`。此命令生成 32 秒非语音合成信号，直接进行一轮训练并测试两种模式，不读取麦克风，不向用户音色库注册测试模型。它有意绕过 UI 的十分钟素材门槛，只用于工程链路验证；完整训练效果需要授权真人语料。
 
 运行 `scripts/build.ps1`：测试 → 许可证收集 → PyInstaller → EXE 自检 → ZIP 和 SHA-256。
+
+v0.3 起构建还生成独立 ReadingKit 文字 ZIP，白名单仅包含稿件 Markdown、JSON 和许可，不读取本机用户录音。`scripts/smoke_reading_ui.py` 用真实 Tk 和模拟录音验证采集/确认/续读，不打开音频设备。修改稿件时须同步 `resources/reading_zh.txt` 和 JSON，维持已发布段落 ID 的含义，避免错配历史录音。
 
 GitHub Actions 在 main/PR 构建 Artifact，`v*` 标签发布预览版。下一版本需同步版本号、ZIP 名称、Release notes 和下载链接。源码 GPL-3.0 与 Pedalboard 兼容，保留标签对应源码与依赖许可证。发布包不捆绑模型/插件/驱动。
 
