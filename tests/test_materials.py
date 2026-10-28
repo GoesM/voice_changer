@@ -56,7 +56,7 @@ class MaterialsTests(unittest.TestCase):
         reading.save_pending(self.project, self.segment["id"], path)
         self.assertEqual(studio.dataset_report(self.project)["seconds"], 0)
         self.assertEqual(reading.completed(self.project), set())
-        self.assertEqual(reading.pending_take(self.project, self.segment["id"]), path)
+        self.assertTrue(reading.pending_take(self.project, self.segment["id"]).samefile(path))
 
     def test_accept_resume_and_remove_update_progress(self):
         path = self.wav()
